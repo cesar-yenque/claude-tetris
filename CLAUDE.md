@@ -23,7 +23,7 @@ There is no build, lint, or test command — there is no package.json or tooling
 Everything lives in `game.js` (~300 lines), organized around a single game loop:
 
 - **Board model**: `board` is a `ROWS × COLS` matrix (`createBoard()`); each cell is `0` (empty) or an index 1–7 identifying the locked piece's color.
-- **Pieces**: `PIECES` holds the 7 tetrominoes as square matrices. `randomPiece()` picks one; `rotateCW()` rotates via transpose + row-reverse.
+- **Pieces**: `PIECES` holds the 7 tetrominoes plus a bonus 3×3 "nut" piece (a hollow ring — center cell is `0`) as square matrices. `randomPiece()` picks one; `rotateCW()` rotates via transpose + row-reverse.
 - **Collision**: `collide(shape, ox, oy)` checks board bounds and overlap with locked cells; used by movement, rotation, and drop logic.
 - **Wall kicks**: `tryRotate()` rotates the current piece and, on collision, retries at ±1/±2 column offsets before giving up.
 - **Locking / clearing**: `lockPiece()` merges the piece into `board` (`merge()`), then `clearLines()` sweeps bottom-up, removing full rows and unshifting empty ones at the top.
