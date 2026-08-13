@@ -1,0 +1,168 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened, edited]
+
+concurrency:
+  group: issue-triage-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  triage:
+    if: |
+      !endsWith(github.event.sender.login, '[bot]') &&
+      !contains(github.event.issue.body, '@claude') &&
+      (
+        github.event.action == 'opened' ||
+        (github.event.action == 'edited' &&
+          (github.event.changes.body != null || github.event.changes.title != null))
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Bootstrap label taxonomy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          create_label() {
+            gh label create "$1" --color "$2" --description "$3" --force
+          }
+
+          # Tipo
+          create_label "type: bug" "d73a4a" "Comportamiento incorrecto del juego"
+          create_label "type: feature" "0e8a16" "Nueva funcionalidad"
+          create_label "type: enhancement" "a2eeef" "Mejora de algo existente"
+          create_label "type: docs" "0075ca" "Documentación"
+          create_label "type: question" "d876e3" "Pregunta o duda"
+
+          # Área (según la arquitectura descrita en CLAUDE.md)
+          create_label "area: gameplay" "5319e7" "Lógica del juego (colisión, rotación, lock, líneas)"
+          create_label "area: render" "1d76db" "Dibujo en canvas"
+          create_label "area: input" "fbca04" "Manejo de teclado/controles"
+          create_label "area: ui" "bfd4f2" "HTML/CSS, overlays, marcador"
+          create_label "area: scoring" "c2e0c6" "Puntaje, niveles, velocidad"
+          create_label "area: build" "eeeeee" "Configuración, tooling, workflows"
+
+          # Prioridad
+          create_label "priority: high" "b60205" "Alta prioridad"
+          create_label "priority: medium" "fbca04" "Prioridad media"
+          create_label "priority: low" "c5def5" "Baja prioridad"
+
+          # Complejidad
+          create_label "complexity: trivial" "c5def5" "Cambio trivial"
+          create_label "complexity: moderate" "fbca04" "Complejidad moderada"
+          create_label "complexity: complex" "b60205" "Cambio complejo"
+
+          # Estado
+          create_label "needs-info" "e4e669" "Falta información para poder diagnosticar/reproducir"
+
+      - name: Run Claude triage
+        id: claude-triage
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowedTools "Read,Grep,Glob,Bash(gh issue view:*),Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh api:*),Bash(gh label list:*)"'
+          prompt: |
+            Eres el encargado de hacer triage del issue #${{ github.event.issue.number }} del
+            repositorio ${{ github.repository }}.
+
+            ## Contexto del proyecto
+
+            Tetris en JavaScript vanilla con HTML5 Canvas. Sin dependencias, sin build, sin tests
+            automatizados. Tres archivos: `index.html`, `style.css`, `game.js` (~300 líneas).
+            Consulta `CLAUDE.md` para el mapa completo de arquitectura. Resumen rápido de `game.js`:
+
+            - Tablero: `board` (matriz ROWS×COLS), `createBoard()`.
+            - Piezas: `PIECES`, `randomPiece()`, `rotateCW()`.
+            - Colisión: `collide(shape, ox, oy)`.
+            - Wall kicks: `tryRotate()`.
+            - Lock/clear: `lockPiece()`, `merge()`, `clearLines()`.
+            - Puntaje: `LINE_SCORES`, nivel, `dropInterval`.
+            - Ghost piece: `ghostY()`.
+            - Loop principal: `loop(ts)` vía `requestAnimationFrame`.
+            - Input: un único listener `keydown`.
+            - Game over: `spawn()` → `endGame()`.
+
+            ## Tarea 1: Labels
+
+            1. Ejecuta `gh issue view ${{ github.event.issue.number }} --json title,body,labels,comments`
+               para leer el issue completo.
+            2. Lee el código relevante del repo con Read/Grep antes de concluir nada — no
+               especules sin haber abierto los archivos implicados.
+            3. Elige labels **únicamente** de esta lista exacta (no crees labels nuevas, no uses
+               otras):
+               - Tipo (exactamente una): `type: bug`, `type: feature`, `type: enhancement`,
+                 `type: docs`, `type: question`
+               - Área (una o más): `area: gameplay`, `area: render`, `area: input`, `area: ui`,
+                 `area: scoring`, `area: build`
+               - Prioridad (exactamente una): `priority: high`, `priority: medium`, `priority: low`
+               - Complejidad (exactamente una): `complexity: trivial`, `complexity: moderate`,
+                 `complexity: complex`
+               - Estado (si aplica): `needs-info` — cuando el issue no da suficiente información
+                 para reproducir o diagnosticar.
+            4. Aplica las labels con `gh issue edit ${{ github.event.issue.number }} --add-label "..."`.
+               Si el issue ya tenía labels de esta misma taxonomía que ya no correspondan tras una
+               edición, quítalas con `--remove-label`.
+
+            ## Tarea 2: Diagnóstico técnico
+
+            Este diagnóstico se usará después para implementar la solución, así que debe ser
+            concreto y verificado contra el código real, no genérico.
+
+            1. Busca si ya existe un comentario de diagnóstico previo con
+               `gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments`
+               buscando uno cuyo `body` empiece con `<!-- claude-triage-diagnosis -->`.
+            2. Redacta el diagnóstico en español con este formato exacto (Markdown), empezando
+               siempre por la línea `<!-- claude-triage-diagnosis -->`:
+
+               ```
+               <!-- claude-triage-diagnosis -->
+               ## 🔍 Diagnóstico técnico
+
+               **Resumen**
+               ...
+
+               **Comportamiento esperado vs. actual**
+               ...
+
+               **Causa raíz probable**
+               ... (referencias reales tipo `game.js:123`, verificadas leyendo el archivo)
+
+               **Archivos y funciones implicadas**
+               ...
+
+               **Enfoque sugerido de solución**
+               ... (pasos concretos, sin escribir el parche final)
+
+               **Criterios de aceptación**
+               - [ ] ...
+
+               **Riesgos / efectos colaterales**
+               ...
+
+               **Información faltante**
+               ... (omite esta sección si no aplica)
+               ```
+
+            3. Si ya existe un comentario con ese sentinel, actualízalo con
+               `gh api --method PATCH repos/${{ github.repository }}/issues/comments/<id> -f body=@archivo`
+               (usa un archivo temporal para el body, no pases markdown multilínea directo en `-f`).
+               Si no existe, créalo con `gh issue comment ${{ github.event.issue.number }} --body-file <archivo>`.
+               No dupliques el comentario.
+
+            ## Prohibiciones
+
+            - No modifiques ningún archivo del repositorio.
+            - No abras pull requests.
+            - No crees labels nuevas fuera de la lista dada.
+            - No edites el cuerpo ni el título del issue.
