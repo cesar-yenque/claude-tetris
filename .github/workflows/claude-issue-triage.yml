@@ -76,6 +76,10 @@ jobs:
             Eres el encargado de hacer triage del issue #${{ github.event.issue.number }} del
             repositorio ${{ github.repository }}.
 
+            Todo comentario que publiques debe estar escrito en formato Markdown válido y bien
+            interpretable por GitHub (encabezados, listas, checkboxes, bloques de código con
+            triple backtick, etc.).
+
             ## Contexto del proyecto
 
             Tetris en JavaScript vanilla con HTML5 Canvas. Sin dependencias, sin build, sin tests
