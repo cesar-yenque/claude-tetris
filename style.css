@@ -48,6 +48,17 @@ body.light {
   --switch-knob: #3b5bdb;
 }
 
+body.skin-neon {
+  --board-bg: #050505;
+  --board-border: #1a1a1a;
+  --board-shadow: rgba(0, 229, 255, 0.35);
+}
+
+body.skin-pastel {
+  --board-border: #e5d9f0;
+  --board-shadow: rgba(190, 160, 220, 0.25);
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -136,6 +147,17 @@ body {
   border: 1px solid var(--board-border);
   background: var(--board-bg);
   border-radius: 4px;
+}
+
+/* ---- Skin select ---- */
+#skin-select {
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
+  color: var(--fg);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-family: inherit;
 }
 
 /* ---- Controles ---- */
