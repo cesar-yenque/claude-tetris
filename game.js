@@ -31,6 +31,7 @@ const PIECES = [
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
 const THEME_KEY = 'tetris-theme';
+const START_LEVEL_KEY = 'tetris-start-level';
 const GRID_COLOR = { dark: '#22222e', light: '#d8d8e8' };
 
 const canvas = document.getElementById('board');
@@ -45,8 +46,18 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const themeToggle = document.getElementById('theme-toggle');
+const pauseMenu = document.getElementById('pause-menu');
+const pauseResumeBtn = document.getElementById('pause-resume-btn');
+const pauseRestartBtn = document.getElementById('pause-restart-btn');
+const pauseControlsToggle = document.getElementById('pause-controls-toggle');
+const pauseControlsList = document.getElementById('pause-controls-list');
+const pauseStartLevel = document.getElementById('pause-start-level');
 
-let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let board, current, next, score, lines, level, startLevel, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+
+function computeDropInterval(lvl) {
+  return Math.max(100, 1000 - (lvl - 1) * 90);
+}
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -112,8 +123,8 @@ function clearLines() {
   if (cleared) {
     lines += cleared;
     score += (LINE_SCORES[cleared] || 0) * level;
-    level = Math.floor(lines / 10) + 1;
-    dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    level = startLevel + Math.floor(lines / 10);
+    dropInterval = computeDropInterval(level);
     updateHUD();
   }
 }
@@ -244,17 +255,22 @@ function loadTheme() {
   applyTheme(saved === 'light' ? 'light' : 'dark');
 }
 
+function loadStartLevel() {
+  const saved = parseInt(localStorage.getItem(START_LEVEL_KEY), 10);
+  return saved >= 1 && saved <= 10 ? saved : 1;
+}
+
 function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    pauseMenu.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
-    overlay.classList.remove('hidden');
+    pauseStartLevel.value = String(loadStartLevel());
+    pauseMenu.classList.remove('hidden');
   }
 }
 
@@ -280,22 +296,24 @@ function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  startLevel = loadStartLevel();
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = computeDropInterval(level);
   dropAccum = 0;
   lastTime = performance.now();
   next = randomPiece();
   spawn();
   updateHUD();
   overlay.classList.add('hidden');
+  pauseMenu.classList.add('hidden');
   cancelAnimationFrame(animId);
   animId = requestAnimationFrame(loop);
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -320,6 +338,26 @@ document.addEventListener('keydown', e => {
 });
 
 restartBtn.addEventListener('click', init);
+
+pauseResumeBtn.addEventListener('click', togglePause);
+
+pauseRestartBtn.addEventListener('click', () => {
+  localStorage.setItem(START_LEVEL_KEY, pauseStartLevel.value);
+  paused = false;
+  pauseMenu.classList.add('hidden');
+  init();
+});
+
+pauseControlsToggle.addEventListener('click', () => {
+  const expanded = pauseControlsToggle.getAttribute('aria-expanded') === 'true';
+  pauseControlsToggle.setAttribute('aria-expanded', String(!expanded));
+  pauseControlsList.classList.toggle('hidden', expanded);
+  pauseControlsToggle.textContent = expanded ? 'Ver controles' : 'Ocultar controles';
+});
+
+pauseStartLevel.addEventListener('change', () => {
+  localStorage.setItem(START_LEVEL_KEY, pauseStartLevel.value);
+});
 
 themeToggle.addEventListener('change', () => {
   const theme = themeToggle.checked ? 'light' : 'dark';

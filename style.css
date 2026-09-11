@@ -21,6 +21,10 @@
   --switch-bg: #22223a;
   --switch-border: #3a3a5a;
   --switch-knob: #7aa2f7;
+  --pause-title-color: #7aa2f7;
+  --pause-btn-bg: #22223a;
+  --pause-btn-border: #3a3a5a;
+  --pause-btn-hover: #2c2c48;
 }
 
 body.light {
@@ -46,6 +50,10 @@ body.light {
   --switch-bg: #d8d8e4;
   --switch-border: #c0c0d0;
   --switch-knob: #3b5bdb;
+  --pause-title-color: #3b5bdb;
+  --pause-btn-bg: #e8e8f0;
+  --pause-btn-border: #c8c8d8;
+  --pause-btn-hover: #dadaea;
 }
 
 *, *::before, *::after {
@@ -258,4 +266,93 @@ kbd {
 
 #restart-btn:hover {
   background: var(--restart-hover);
+}
+
+/* ---- Pause menu ---- */
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(4px);
+  border-radius: 4px;
+}
+
+.pause-overlay.hidden {
+  display: none;
+}
+
+.pause-box {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  width: 200px;
+}
+
+.pause-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--pause-title-color);
+  margin-bottom: 6px;
+}
+
+.pause-box button {
+  background: var(--pause-btn-bg);
+  border: 1px solid var(--pause-btn-border);
+  color: var(--fg);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: background 0.15s;
+}
+
+.pause-box button:hover {
+  background: var(--pause-btn-hover);
+}
+
+.pause-level-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--controls-color);
+}
+
+.pause-level-row select {
+  background: var(--pause-btn-bg);
+  border: 1px solid var(--pause-btn-border);
+  color: var(--fg);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 13px;
+}
+
+.pause-controls-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  padding: 8px 4px 0;
+}
+
+.pause-controls-list.hidden {
+  display: none;
+}
+
+.pause-controls-list li {
+  font-size: 12px;
+  color: var(--controls-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
