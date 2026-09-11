@@ -55,6 +55,43 @@
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
         <button id="restart-btn">Reiniciar</button>
+
+        <div id="highscore-entry" class="highscore-entry hidden">
+          <input id="highscore-name-input" type="text" maxlength="12" placeholder="Tu nombre" />
+          <button id="highscore-save-btn">Guardar</button>
+        </div>
+
+        <div class="highscore-section">
+          <p class="label">RECORDS</p>
+          <table id="highscore-table" class="highscore-table"></table>
+          <p id="overlay-stats" class="stats-line"></p>
+          <button id="reset-scores-btn" class="reset-btn">Resetear records</button>
+          <div id="reset-confirm" class="reset-confirm hidden">
+            <span>¿Borrar todos los records?</span>
+            <button id="reset-confirm-yes">Sí</button>
+            <button id="reset-confirm-no">No</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="start-screen" class="overlay">
+      <div class="overlay-box">
+        <p class="start-title">TETRIS</p>
+
+        <div class="highscore-section">
+          <p class="label">RECORDS</p>
+          <table id="start-highscore-table" class="highscore-table"></table>
+          <p id="start-stats" class="stats-line"></p>
+        </div>
+
+        <button id="start-btn">Jugar</button>
+        <button id="start-reset-btn" class="reset-btn">Resetear records</button>
+        <div id="start-reset-confirm" class="reset-confirm hidden">
+          <span>¿Borrar todos los records?</span>
+          <button id="start-reset-confirm-yes">Sí</button>
+          <button id="start-reset-confirm-no">No</button>
+        </div>
       </div>
     </div>
   </div>
